@@ -122,8 +122,8 @@ if (args[0] === "context" && args[1] === "show") {
   else if (scenario === "large-output") process.stdout.write("x".repeat(10000));
   else { const state = JSON.parse(fs.readFileSync(statePath, "utf8")); if (scenario === "run" && state.autoRemove) fs.writeFileSync(statePath + ".auto-removed", "removed"); process.stdout.write("prefix sk-proj-0123456789abc"); process.stdout.write("defghijklmnopqrstuv suffix\\n"); }
 } else if (args[0] === "ps") {
-  if (fs.existsSync(statePath + ".auto-removed")) process.stdout.write("");
-  else if (fs.existsSync(statePath)) process.stdout.write("${"c".repeat(64)}\\n");
+  if (fs.existsSync(statePath + ".auto-removed") || fs.existsSync(statePath + ".removed")) process.stdout.write("");
+  else if (fs.existsSync(statePath)) process.stdout.write("${"c".repeat(12)}\\n");
 } else if (args[0] === "inspect") {
   const labels = JSON.parse(fs.readFileSync(statePath, "utf8")).labels;
   if (scenario === "wrong-labels") labels["io.codebridge.managed"] = "false";

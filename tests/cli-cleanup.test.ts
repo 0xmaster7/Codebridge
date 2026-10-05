@@ -60,5 +60,5 @@ void test("CLI cleanup removes only dead sessions and their verified CodeBridge 
   const listCall = calls.find((args) => args[0] === "ps");
   const removeCall = calls.find((args) => args[0] === "rm");
   assert.ok(listCall?.includes(`label=io.codebridge.session=${staleSession}`));
-  assert.ok(removeCall?.includes("c".repeat(64)));
+  assert.ok(removeCall?.includes("c".repeat(12)));
 });

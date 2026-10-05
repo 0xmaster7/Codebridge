@@ -143,6 +143,16 @@ void test("DockerSandboxRunner enforces its wall-clock limit and propagates canc
     ),
     { code: "RUN_TIMEOUT" },
   );
+  await access(`${docker.statePath}.removed`);
+  const timeoutCalls = (await readFile(docker.callsPath, "utf8"))
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line) as string[]);
+  assert.deepEqual(
+    timeoutCalls.map((args) => args[0]).filter((command) => command !== "context"),
+    ["create", "start", "ps", "inspect", "rm"],
+    "timeout cleanup must inspect and remove containers returned with Docker's abbreviated ID",
+  );
 
   const controller = new AbortController();
   const run = new DockerSandboxRunner(project, fixtureSnapshot(root).sessionId).run(

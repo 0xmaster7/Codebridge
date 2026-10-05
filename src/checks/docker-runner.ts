@@ -223,7 +223,7 @@ export class DockerSandboxRunner {
       if (
         identifiers.length !== 1 ||
         identifiers.some((identifier) => !/^[a-f0-9]{12,64}$/i.test(identifier)) ||
-        (isId && identifiers[0] !== containerId)
+        (isId && !containerId.startsWith(identifiers[0] ?? ""))
       )
         return false;
       const ownedId = identifiers[0];
