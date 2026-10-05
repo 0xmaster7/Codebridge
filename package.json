@@ -1,0 +1,43 @@
+{
+  "name": "codebridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Secure local repository audit bridge over MCP",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "bin": {
+    "codebridge": "./dist/src/cli.js"
+  },
+  "files": [
+    "dist/",
+    "plugin.json",
+    "mcp.json",
+    "skills/"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test dist/tests/*.test.js",
+    "test:coverage": "c8 --all --include=dist/src/**/*.js --reporter=text --reporter=lcov node --test dist/tests/*.test.js",
+    "validate:plugin": "node scripts/validate-plugin.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.1",
+    "c8": "12.0.0",
+    "eslint": "10.12.0",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.0"
+  }
+}

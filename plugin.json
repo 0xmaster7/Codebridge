@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "codebridge",
+  "version": "0.1.0",
+  "description": "Audit one approved local Git repository through a bounded, read-only MCP interface.",
+  "author": {
+    "name": "CodeBridge contributors"
+  },
+  "repository": "https://github.com/0xmaster7/Codebridge",
+  "license": "MIT",
+  "keywords": ["security", "audit", "mcp", "git"]
+}
