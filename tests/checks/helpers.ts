@@ -82,6 +82,7 @@ export async function createFakeDocker(
       | "wrong-labels"
       | "create-fails"
       | "create-fails-after-create"
+      | "start-fails"
       | "sleep"
       | "large-output";
   } = {},
@@ -119,6 +120,7 @@ if (args[0] === "context" && args[1] === "show") {
   process.stdout.write("${"c".repeat(64)}\\n");
 } else if (args[0] === "start") {
   if (scenario === "sleep") setTimeout(() => process.exit(0), 3000);
+  else if (scenario === "start-fails") process.exit(1);
   else if (scenario === "large-output") process.stdout.write("x".repeat(10000));
   else { const state = JSON.parse(fs.readFileSync(statePath, "utf8")); if (scenario === "run" && state.autoRemove) fs.writeFileSync(statePath + ".auto-removed", "removed"); process.stdout.write("prefix sk-proj-0123456789abc"); process.stdout.write("defghijklmnopqrstuv suffix\\n"); }
 } else if (args[0] === "ps") {

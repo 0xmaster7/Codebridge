@@ -67,6 +67,34 @@ void test("DockerSandboxRunner refuses to remove a container whose ownership lab
   await assert.rejects(access(`${docker.statePath}.removed`));
 });
 
+void test("DockerSandboxRunner cleans a full created ID when Docker lists its abbreviated ID", async (context) => {
+  const root = await mkdtemp(join(tmpdir(), "codebridge-docker-short-id-"));
+  context.after(async () => rm(root, { recursive: true, force: true }));
+  const docker = await createFakeDocker(root, { scenario: "start-fails" });
+  const project = fixtureProject(root, {
+    executables: { git: "/usr/bin/git", docker: docker.executable },
+  });
+  const result = await new DockerSandboxRunner(project, fixtureSnapshot(root).sessionId).run(
+    fixtureProfile(),
+    fixtureSnapshot(root),
+    [],
+    { signal: new AbortController().signal },
+  );
+  assert.equal(result.exitCode, 1);
+  assert.equal(result.cleanupFailed, false);
+  await access(`${docker.statePath}.removed`);
+  const calls = (await readFile(docker.callsPath, "utf8"))
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line) as string[]);
+  assert.deepEqual(
+    calls.map((args) => args[0]).filter((command) => command !== "context"),
+    ["create", "start", "ps", "inspect", "rm"],
+  );
+  assert.equal(calls.find((args) => args[0] === "inspect")?.at(-1), "c".repeat(12));
+  assert.equal(calls.find((args) => args[0] === "rm")?.at(-1), "c".repeat(12));
+});
+
 void test("DockerSandboxRunner reports creation failures and fails closed on excessive output", async (context) => {
   const root = await mkdtemp(join(tmpdir(), "codebridge-docker-failure-"));
   context.after(async () => rm(root, { recursive: true, force: true }));
@@ -148,10 +176,14 @@ void test("DockerSandboxRunner enforces its wall-clock limit and propagates canc
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line) as string[]);
-  assert.deepEqual(
-    timeoutCalls.map((args) => args[0]).filter((command) => command !== "context"),
-    ["create", "start", "ps", "inspect", "rm"],
-    "timeout cleanup must inspect and remove containers returned with Docker's abbreviated ID",
+  const timeoutCommands = timeoutCalls
+    .map((args) => args[0])
+    .filter((command) => command !== "context");
+  assert.equal(timeoutCommands[0], "create");
+  assert.deepEqual(timeoutCommands.slice(-3), ["ps", "inspect", "rm"]);
+  assert.ok(
+    timeoutCommands[1] === "start" || timeoutCommands[1] === "ps",
+    "timeout may happen before or after Docker starts the container",
   );
 
   const controller = new AbortController();
