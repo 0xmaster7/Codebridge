@@ -33,6 +33,7 @@
     "test": "node --test dist/tests/*.test.js dist/tests/*/*.test.js",
     "test:coverage": "c8 --all --include=dist/src/**/*.js --check-coverage --lines 85 --branches 80 --reporter=text --reporter=lcov node --test dist/tests/*.test.js dist/tests/*/*.test.js",
     "test:sandbox-docker": "node scripts/docker-adversarial-smoke.mjs",
+    "test:repository-dry-run": "node scripts/repository-dry-run.mjs",
     "check:security-coverage": "node scripts/check-security-coverage.mjs",
     "validate:plugin": "node scripts/validate-plugin.mjs"
   },

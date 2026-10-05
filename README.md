@@ -54,7 +54,7 @@ npm run build
 npm run doctor
 ```
 
-The compiled CLI is `dist/src/cli.js`; `npm link` can expose the `codebridge` command from a local checkout. Keep dependencies and lockfile pinned. `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:coverage`, `npm run check:security-coverage`, `node scripts/inspector-smoke.mjs`, and `npm run validate:plugin` are local quality gates. CI also builds a test-only image and runs `npm run test:sandbox-docker` against its exact immutable image ID.
+The compiled CLI is `dist/src/cli.js`; `npm link` can expose the `codebridge` command from a local checkout. Keep dependencies and lockfile pinned. `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:coverage`, `npm run check:security-coverage`, `node scripts/inspector-smoke.mjs`, and `npm run validate:plugin` are local quality gates. CI also builds test-only Node and Python images and runs `npm run test:sandbox-docker` and `npm run test:repository-dry-run` against their exact immutable image IDs.
 
 ## Authorize one project
 

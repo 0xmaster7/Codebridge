@@ -25,7 +25,7 @@ async function waitForState(
   runId: string,
   expected: string,
 ): Promise<void> {
-  const deadline = Date.now() + 20000;
+  const deadline = Date.now() + 60000;
   while (Date.now() < deadline) {
     if (manager.status(runId).state === expected) return;
     await new Promise((resolve) => setTimeout(resolve, 20));

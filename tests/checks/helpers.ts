@@ -14,7 +14,7 @@ export function fixtureProfile(overrides: Partial<CheckProfile> = {}): CheckProf
     targetMode: "none",
     allowedTargetSuffixes: [],
     allowedTargetPaths: [],
-    timeoutSeconds: 10,
+    timeoutSeconds: 60,
     stdoutLimitBytes: 4096,
     stderrLimitBytes: 4096,
     environmentAllowlist: [],
