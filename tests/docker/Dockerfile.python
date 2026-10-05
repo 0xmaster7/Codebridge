@@ -1,5 +1,7 @@
-FROM python:3.12-slim
-RUN python -m pip install --no-cache-dir pytest==8.4.2
+FROM debian:bookworm-slim
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends python3 python3-pytest \
+    && rm -rf /var/lib/apt/lists/*
 COPY sandbox/codebridge-launch /usr/libexec/codebridge-launch
 RUN chmod 0555 /usr/libexec/codebridge-launch
 ENTRYPOINT ["/usr/libexec/codebridge-launch"]
