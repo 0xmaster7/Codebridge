@@ -152,7 +152,17 @@ try {
   assert.match(context.snapshot.manifestSha256, /^[a-f0-9]{64}$/);
 
   const status = await context.git.status();
-  assert.equal(status.workingTree, "clean");
+  assert.ok(["clean", "partially-observed"].includes(status.workingTree));
+  assert.equal(status.stagedChanges.length, 0);
+  assert.equal(status.modifiedPaths.length, 0);
+  assert.equal(status.deletedPaths.length, 0);
+  assert.equal(status.untrackedPaths.length, 0);
+  if (status.workingTree === "partially-observed") {
+    assert.ok(
+      status.unavailablePaths.length > 0 ||
+        context.snapshot.entries.some((entry) => entry.type === "blocked"),
+    );
+  }
   assert.equal(status.snapshotId, context.snapshot.snapshotId);
   const tree = context.reader.tree({ path: ".", depth: 4, maxEntries: 2000 });
   assert.ok(tree.items.some((entry) => entry.path === "src/git/mirror.ts"));
@@ -190,6 +200,7 @@ try {
       manifestSha256: context.snapshot.manifestSha256,
       headSha: head,
       branch: context.mirror.branch,
+      workingTree: status.workingTree,
       approvedRequirementSha256: requirement.approvedSha256,
       gitMirrorSha256: context.mirror.mirrorSha256,
       indexSha256: context.mirror.indexSha256,

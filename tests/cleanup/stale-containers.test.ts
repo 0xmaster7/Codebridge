@@ -20,7 +20,9 @@ async function fakeDocker(root: string, options: { sessionId: string; labelsMatc
       `const fs = require("node:fs");\n` +
       `const args = process.argv.slice(2);\n` +
       `fs.appendFileSync(${JSON.stringify(calls)}, JSON.stringify(args) + "\\n");\n` +
-      `if (args[0] === "ps") process.stdout.write("0123456789abcdef\\n");\n` +
+      `if (args[0] === "context" && args[1] === "show") process.stdout.write("default\\n");\n` +
+      `else if (args[0] === "context" && args[1] === "inspect") process.stdout.write("unix:///tmp/codebridge-cleanup.sock\\n");\n` +
+      `else if (args[0] === "ps") process.stdout.write("0123456789abcdef\\n");\n` +
       `else if (args[0] === "inspect") process.stdout.write(fs.readFileSync(${JSON.stringify(state)}, "utf8"));\n` +
       `else if (args[0] === "rm") fs.writeFileSync(${JSON.stringify(state + ".removed")}, "yes");\n`,
     { mode: 0o700 },
@@ -42,10 +44,12 @@ void test("stale container cleanup verifies filtered and inspected CodeBridge ow
     .map((line) => JSON.parse(line) as string[]);
   assert.deepEqual(
     calls.map((args) => args[0]),
-    ["ps", "inspect", "rm"],
+    ["context", "context", "ps", "inspect", "rm"],
   );
-  assert.ok(calls[0]?.some((arg) => arg === `label=io.codebridge.session=${sessionId}`));
-  assert.ok(calls[2]?.includes("0123456789abcdef"));
+  const listCall = calls.find((args) => args[0] === "ps");
+  const removeCall = calls.find((args) => args[0] === "rm");
+  assert.ok(listCall?.some((arg) => arg === `label=io.codebridge.session=${sessionId}`));
+  assert.ok(removeCall?.includes("0123456789abcdef"));
   await assert.rejects(cleanupStaleSessionContainers(docker.executable, "not-a-session"), {
     code: "INVALID_ARGUMENT",
   });
@@ -65,13 +69,19 @@ void test("stale container cleanup refuses changed ownership labels and unsafe I
     .map((line) => JSON.parse(line) as string[]);
   assert.deepEqual(
     mismatchCalls.map((args) => args[0]),
-    ["ps", "inspect"],
+    ["context", "context", "ps", "inspect"],
   );
 
   const unsafe = join(root, "unsafe-docker");
-  await writeFile(unsafe, `#!${process.execPath}\nprocess.stdout.write("--privileged\\n");\n`, {
-    mode: 0o700,
-  });
+  await writeFile(
+    unsafe,
+    `#!${process.execPath}\n` +
+      `const args = process.argv.slice(2);\n` +
+      `if (args[0] === "context" && args[1] === "show") process.stdout.write("default\\n");\n` +
+      `else if (args[0] === "context" && args[1] === "inspect") process.stdout.write("unix:///tmp/codebridge-cleanup.sock\\n");\n` +
+      `else process.stdout.write("--privileged\\n");\n`,
+    { mode: 0o700 },
+  );
   await chmod(unsafe, 0o700);
   await assert.rejects(cleanupStaleSessionContainers(unsafe, sessionId), {
     code: "SANDBOX_LIMIT_UNAVAILABLE",

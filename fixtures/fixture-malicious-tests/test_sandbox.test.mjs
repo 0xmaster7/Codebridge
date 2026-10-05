@@ -22,8 +22,8 @@ test("runs with no uid, capabilities, or privilege escalation", () => {
   assert.match(status, /^CapEff:\s+0+$/m);
   assert.match(status, /^NoNewPrivs:\s+1$/m);
   const limits = readFileSync("/proc/self/limits", "utf8");
-  assert.match(limits, /^Max open files\s+64\s+64\s+files$/m);
-  assert.match(limits, /^Max core file size\s+0\s+0\s+bytes$/m);
+  assert.match(limits, /^Max open files\s+64\s+64\s+files\s*$/m);
+  assert.match(limits, /^Max core file size\s+0\s+0\s+bytes\s*$/m);
 });
 
 test("has the configured kernel resource and storage bounds", () => {

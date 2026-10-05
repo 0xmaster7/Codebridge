@@ -4,6 +4,7 @@ import { EnvironmentSanitizer } from "../security/environment-sanitizer.js";
 import { StreamingRedactor } from "../security/streaming-redactor.js";
 import type { CheckProfile, ProjectConfig } from "../config/schema.js";
 import { buildDockerSandboxPlan } from "./docker-args.js";
+import { resolveDockerHost } from "./docker-endpoint.js";
 import { validateTargets } from "./target-policy.js";
 import type { WorktreeSnapshot } from "../snapshot/manager.js";
 
@@ -115,7 +116,8 @@ export class DockerSandboxRunner {
       sessionId: this.sessionId,
       targets: validatedTargets,
     });
-    const environment = new EnvironmentSanitizer().forDocker(docker, {});
+    const dockerHost = await resolveDockerHost(docker);
+    const environment = new EnvironmentSanitizer().forDocker(docker, {}, dockerHost);
     let containerId = "";
     let containerMayExist = false;
     let timedOut = false;
@@ -142,7 +144,6 @@ export class DockerSandboxRunner {
         environment,
       });
       if (created.exitCode !== 0) {
-        containerMayExist = false;
         throw new CodeBridgeError(
           "SANDBOX_START_FAILED",
           "Docker could not create the isolated check container.",
@@ -197,21 +198,39 @@ export class DockerSandboxRunner {
     environment: NodeJS.ProcessEnv,
   ): Promise<boolean> {
     try {
+      const isId = /^[a-f0-9]{12,64}$/i.test(containerId);
       const presence = await runCommand({
         executable: docker,
-        args: ["ps", "--all", "--filter", `id=${containerId}`, "--format", "{{.ID}}"],
+        args: [
+          "ps",
+          "--all",
+          "--filter",
+          isId ? `id=${containerId}` : `name=^/${containerId}$`,
+          "--format",
+          "{{.ID}}",
+        ],
         stdoutMaxBytes: 4096,
         stderrMaxBytes: 4096,
         timeoutMs: 10000,
         environment,
       });
       if (presence.exitCode !== 0) return false;
-      if (presence.stdout.trim() === "") return true;
-      if (presence.stdout.trim() !== containerId && !containerId.startsWith(presence.stdout.trim()))
+      const identifiers = presence.stdout
+        .split(/\r?\n/)
+        .map((identifier) => identifier.trim())
+        .filter(Boolean);
+      if (identifiers.length === 0) return true;
+      if (
+        identifiers.length !== 1 ||
+        identifiers.some((identifier) => !/^[a-f0-9]{12,64}$/i.test(identifier)) ||
+        (isId && identifiers[0] !== containerId)
+      )
         return false;
+      const ownedId = identifiers[0];
+      if (!ownedId) return false;
       const inspected = await runCommand({
         executable: docker,
-        args: ["inspect", "--format", "{{json .Config.Labels}}", containerId],
+        args: ["inspect", "--format", "{{json .Config.Labels}}", ownedId],
         stdoutMaxBytes: 16 * 1024,
         stderrMaxBytes: 16 * 1024,
         timeoutMs: 10000,
@@ -222,7 +241,7 @@ export class DockerSandboxRunner {
       if (Object.entries(labels).some(([key, value]) => observed[key] !== value)) return false;
       const removed = await runCommand({
         executable: docker,
-        args: ["rm", "--force", containerId],
+        args: ["rm", "--force", ownedId],
         stdoutMaxBytes: 16 * 1024,
         stderrMaxBytes: 16 * 1024,
         timeoutMs: 10000,

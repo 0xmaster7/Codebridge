@@ -90,7 +90,7 @@ const dockerPath = execFileSync("which", [docker], { encoding: "utf8" }).trim();
 const workspace = await mkdtemp(join(tmpdir(), "codebridge-docker-security-"));
 const repository = join(workspace, "repository");
 const state = join(workspace, "state");
-await Promise.all([mkdir(repository), mkdir(state)]);
+await Promise.all([mkdir(repository), mkdir(state, { mode: 0o700 })]);
 await cp(maliciousFixture, join(repository, "test_sandbox.test.mjs"));
 
 const hostSecret = "host-secret-canary-must-not-cross-into-the-container";
@@ -136,7 +136,7 @@ try {
     signal: new globalThis.AbortController().signal,
   });
   assert.equal(output.exitCode, 0);
-  assert.match(output.stdout, /\[REDACTED\]/);
+  assert.match(output.stdout, /\[REDACTED_[A-Z_]+\]/);
   assert.doesNotMatch(output.stdout, /sk-proj-0123456789/);
 
   const timeoutProfile = profile(imageDigest, {

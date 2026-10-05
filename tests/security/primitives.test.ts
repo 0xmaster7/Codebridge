@@ -193,38 +193,56 @@ void test("EnvironmentSanitizer never copies parent secrets into child environme
   assert.equal(git["OPENAI_API_KEY"], undefined);
   assert.equal(git["SSH_AUTH_SOCK"], undefined);
 
-  const docker = sanitizer.forDocker("/usr/local/bin/docker", {
-    CI: "true",
-    OPENAI_API_KEY: "TEST_DO_NOT_LEAK",
-    AWS_SECRET_ACCESS_KEY: "TEST_DO_NOT_LEAK",
-    CUSTOM_VALUE: "allowed by external profile only",
-  });
+  const docker = sanitizer.forDocker(
+    "/usr/local/bin/docker",
+    {
+      CI: "true",
+      DOCKER_CONTEXT: "untrusted-remote",
+      DOCKER_HOST: "tcp://untrusted.example:2376",
+      OPENAI_API_KEY: "TEST_DO_NOT_LEAK",
+      AWS_SECRET_ACCESS_KEY: "TEST_DO_NOT_LEAK",
+      CUSTOM_VALUE: "allowed by external profile only",
+    },
+    "unix:///var/run/docker.sock",
+  );
   assert.equal(docker["CI"], "true");
   assert.equal(docker["OPENAI_API_KEY"], undefined);
   assert.equal(docker["AWS_SECRET_ACCESS_KEY"], undefined);
   assert.equal(docker["HOME"], "/nonexistent");
+  assert.equal(docker["DOCKER_HOST"], "unix:///var/run/docker.sock");
+  assert.equal(docker["DOCKER_CONTEXT"], undefined);
   assert.deepEqual(Object.keys(docker).sort(), [
     "CI",
     "CUSTOM_VALUE",
+    "DOCKER_HOST",
     "HOME",
     "LANG",
     "LC_ALL",
     "PATH",
   ]);
-  const filtered = sanitizer.forDocker("/opt/docker/bin/docker", {
-    good_KEYLESS: "1",
-    _bad: "2",
-    KEY_MATERIAL: "secret",
-    HUGE: "x".repeat(513),
-    LOW: "safe",
-  });
+  const filtered = sanitizer.forDocker(
+    "/opt/docker/bin/docker",
+    {
+      good_KEYLESS: "1",
+      _bad: "2",
+      KEY_MATERIAL: "secret",
+      HUGE: "x".repeat(513),
+      LOW: "safe",
+    },
+    "unix:///tmp/codebridge.sock",
+  );
   assert.deepEqual(filtered, {
     HOME: "/nonexistent",
     LANG: "C",
     LC_ALL: "C",
     PATH: "/opt/docker/bin:/usr/bin:/bin",
+    DOCKER_HOST: "unix:///tmp/codebridge.sock",
     LOW: "safe",
   });
+  assert.throws(
+    () => sanitizer.forDocker("/opt/docker/bin/docker", {}, "ssh://remote-host"),
+    /local Unix socket/,
+  );
 });
 
 void test("LimitPolicy bounds reads/search and rejects invalid or over-budget snapshots", () => {

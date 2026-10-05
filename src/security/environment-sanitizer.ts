@@ -26,11 +26,16 @@ export class EnvironmentSanitizer {
   public forDocker(
     dockerExecutable: string,
     profileEnvironment: Record<string, string>,
+    dockerHost: string,
   ): NodeJS.ProcessEnv {
+    if (!/^unix:\/\/\/[^\0\r\n?#]+$/.test(dockerHost)) {
+      throw new Error("Docker host must be a local Unix socket.");
+    }
     const safe = Object.fromEntries(
       Object.entries(profileEnvironment).filter(
         ([key, value]) =>
           /^[A-Z][A-Z0-9_]{0,63}$/.test(key) &&
+          !key.startsWith("DOCKER_") &&
           !/(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)/i.test(key) &&
           value.length <= 512,
       ),
@@ -41,6 +46,7 @@ export class EnvironmentSanitizer {
       LC_ALL: "C",
       PATH: `${dirname(dockerExecutable)}:/usr/bin:/bin`,
       ...safe,
+      DOCKER_HOST: dockerHost,
     };
   }
 }

@@ -7,6 +7,7 @@ import { SecretScanner } from "../security/secret-scanner.js";
 import { SnapshotGuard } from "../security/snapshot-guard.js";
 import type { WorktreeSnapshot } from "../snapshot/manager.js";
 import { validateTargets } from "./target-policy.js";
+import { resolveDockerHost } from "./docker-endpoint.js";
 
 export type CheckReadinessState = "ready" | "image-missing" | "dependencies-not-ready" | "disabled";
 
@@ -28,15 +29,17 @@ interface ImageInfo {
   };
 }
 
-function runDocker(
+async function runDocker(
   executable: string,
   args: readonly string[],
   timeoutMs = 15000,
 ): Promise<string> {
+  const dockerHost = await resolveDockerHost(executable);
+  const environment = new EnvironmentSanitizer().forDocker(executable, {}, dockerHost);
   return new Promise((resolve, reject) => {
     const child = spawn(executable, args, {
       shell: false,
-      env: new EnvironmentSanitizer().forDocker(executable, {}),
+      env: environment,
       stdio: ["ignore", "pipe", "ignore"],
     });
     const output: Buffer[] = [];

@@ -72,6 +72,7 @@ export async function createFakeDocker(
   options: {
     readonly imageId?: string;
     readonly imageEnv?: readonly string[];
+    readonly dockerHost?: string;
     readonly scenario?:
       | "ready"
       | "image-missing"
@@ -80,6 +81,7 @@ export async function createFakeDocker(
       | "run"
       | "wrong-labels"
       | "create-fails"
+      | "create-fails-after-create"
       | "sleep"
       | "large-output";
   } = {},
@@ -89,6 +91,7 @@ export async function createFakeDocker(
   const callsPath = join(root, "docker-calls.jsonl");
   const imageId = options.imageId ?? fixtureDigest;
   const imageEnv = options.imageEnv ?? [];
+  const dockerHost = options.dockerHost ?? "unix:///tmp/codebridge-test.sock";
   const scenario = options.scenario ?? "ready";
   const program = `#!${process.execPath}
 const fs = require("node:fs");
@@ -97,7 +100,11 @@ const statePath = ${JSON.stringify(statePath)};
 const callsPath = ${JSON.stringify(callsPath)};
 const scenario = ${JSON.stringify(scenario)};
 fs.appendFileSync(callsPath, JSON.stringify(args) + "\\n");
-if (args[0] === "image") {
+if (args[0] === "context" && args[1] === "show") {
+  process.stdout.write("default\\n");
+} else if (args[0] === "context" && args[1] === "inspect") {
+  process.stdout.write(${JSON.stringify(dockerHost)} + "\\n");
+} else if (args[0] === "image") {
   if (scenario === "image-missing") process.exit(1);
   const image = { Id: ${JSON.stringify(imageId)}, RepoDigests: [], Config: { Env: ${JSON.stringify(imageEnv)} } };
   process.stdout.write(JSON.stringify(image));
@@ -108,6 +115,7 @@ if (args[0] === "image") {
   const labels = {};
   for (let i = 0; i < args.length - 1; i += 1) if (args[i] === "--label") { const [key, ...value] = args[i + 1].split("="); labels[key] = value.join("="); }
   fs.writeFileSync(statePath, JSON.stringify({ labels, autoRemove: args.includes("--rm") }));
+  if (scenario === "create-fails-after-create") process.exit(1);
   process.stdout.write("${"c".repeat(64)}\\n");
 } else if (args[0] === "start") {
   if (scenario === "sleep") setTimeout(() => process.exit(0), 3000);
@@ -115,7 +123,7 @@ if (args[0] === "image") {
   else { const state = JSON.parse(fs.readFileSync(statePath, "utf8")); if (scenario === "run" && state.autoRemove) fs.writeFileSync(statePath + ".auto-removed", "removed"); process.stdout.write("prefix sk-proj-0123456789abc"); process.stdout.write("defghijklmnopqrstuv suffix\\n"); }
 } else if (args[0] === "ps") {
   if (fs.existsSync(statePath + ".auto-removed")) process.stdout.write("");
-  else process.stdout.write("${"c".repeat(64)}\\n");
+  else if (fs.existsSync(statePath)) process.stdout.write("${"c".repeat(64)}\\n");
 } else if (args[0] === "inspect") {
   const labels = JSON.parse(fs.readFileSync(statePath, "utf8")).labels;
   if (scenario === "wrong-labels") labels["io.codebridge.managed"] = "false";

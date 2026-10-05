@@ -42,6 +42,7 @@ The model only sees the session snapshots. Git audit commands run against the pr
 - macOS or Linux, a Git repository, and Node.js 24 LTS or later supported LTS.
 - Git for repository discovery and the private session mirror.
 - A Docker-compatible runtime for check execution. Without it, reads and Git inspection remain available, but checks report unavailable.
+- CodeBridge resolves the active Docker context to its local Unix socket for CLI operations and rejects remote TCP/SSH contexts. It does not pass Docker configuration or registry credentials into a check container.
 - Check profiles require an image already built and approved by the user or CI. The image digest must be immutable and the image must contain all dependencies plus the CodeBridge launcher contract. CodeBridge never pulls, builds, or installs check dependencies.
 
 ## Install and build

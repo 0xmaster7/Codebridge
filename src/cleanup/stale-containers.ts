@@ -1,17 +1,20 @@
 import { spawn } from "node:child_process";
 import { CodeBridgeError } from "../errors.js";
 import { EnvironmentSanitizer } from "../security/environment-sanitizer.js";
+import { resolveDockerHost } from "../checks/docker-endpoint.js";
 
 interface CommandResult {
   readonly stdout: string;
   readonly exitCode: number;
 }
 
-function runDocker(executable: string, args: readonly string[]): Promise<CommandResult> {
+async function runDocker(executable: string, args: readonly string[]): Promise<CommandResult> {
+  const dockerHost = await resolveDockerHost(executable);
+  const environment = new EnvironmentSanitizer().forDocker(executable, {}, dockerHost);
   return new Promise((resolve, reject) => {
     const child = spawn(executable, args, {
       shell: false,
-      env: new EnvironmentSanitizer().forDocker(executable, {}),
+      env: environment,
       stdio: ["ignore", "pipe", "ignore"],
     });
     const chunks: Buffer[] = [];

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -42,11 +42,12 @@ void test("DockerSandboxRunner creates, starts, redacts, and removes only its la
     .split("\n")
     .map((line) => JSON.parse(line) as string[]);
   assert.deepEqual(
-    calls.map((args) => args[0]),
+    calls.map((args) => args[0]).filter((command) => command !== "context"),
     ["create", "start", "ps"],
   );
-  assert.ok(calls[0]?.includes("--network") && calls[0].includes("none"));
-  assert.ok(calls[0]?.includes("--user") && calls[0].includes("65532:65532"));
+  const createCall = calls.find((args) => args[0] === "create");
+  assert.ok(createCall?.includes("--network") && createCall.includes("none"));
+  assert.ok(createCall?.includes("--user") && createCall.includes("65532:65532"));
 });
 
 void test("DockerSandboxRunner refuses to remove a container whose ownership labels drift", async (context) => {
@@ -82,6 +83,35 @@ void test("DockerSandboxRunner reports creation failures and fails closed on exc
     ),
     { code: "SANDBOX_START_FAILED" },
   );
+  const partialCreateRoot = join(root, "partial-create");
+  await mkdir(partialCreateRoot);
+  const partialCreate = await createFakeDocker(partialCreateRoot, {
+    scenario: "create-fails-after-create",
+  });
+  const partialCreateProject = fixtureProject(root, {
+    executables: { git: "/usr/bin/git", docker: partialCreate.executable },
+  });
+  await assert.rejects(
+    new DockerSandboxRunner(partialCreateProject, fixtureSnapshot(root).sessionId).run(
+      fixtureProfile(),
+      fixtureSnapshot(root),
+      [],
+      { signal: new AbortController().signal },
+    ),
+    { code: "SANDBOX_START_FAILED" },
+  );
+  await access(`${partialCreate.statePath}.removed`);
+  const partialCalls = (await readFile(partialCreate.callsPath, "utf8"))
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line) as string[]);
+  assert.deepEqual(
+    partialCalls.map((args) => args[0]).filter((command) => command !== "context"),
+    ["create", "ps", "inspect", "rm"],
+  );
+  const cleanupListCall = partialCalls.find((args) => args[0] === "ps");
+  assert.match(cleanupListCall?.[3] ?? "", /^name=\^\/codebridge-[a-f0-9-]{36}\$$/);
+
   const noisyDocker = await createFakeDocker(root, { scenario: "large-output" });
   const noisyProject = fixtureProject(root, {
     executables: { git: "/usr/bin/git", docker: noisyDocker.executable },
