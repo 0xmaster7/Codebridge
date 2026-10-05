@@ -116,7 +116,7 @@ try {
     id: "python.launcher.targeted",
     adapter: "pytest",
     imageDigest,
-    executable: "/usr/bin/python3",
+    executable: "/usr/bin/python3.11",
     fixedArgs: [
       "-m",
       "pytest",
