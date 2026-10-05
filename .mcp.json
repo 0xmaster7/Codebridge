@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "codebridge": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["dist/src/cli.js", "mcp"],
+      "cwd": "."
+    }
+  }
+}

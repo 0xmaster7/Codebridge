@@ -4,7 +4,8 @@
     "codebridge": {
       "type": "stdio",
       "command": "node",
-      "args": ["${PLUGIN_ROOT}/dist/src/cli.js", "mcp"]
+      "args": ["dist/src/cli.js", "mcp"],
+      "cwd": "."
     }
   }
 }

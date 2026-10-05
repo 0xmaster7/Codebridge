@@ -36,6 +36,7 @@ This decision preserves INV-001 through INV-016 in the authoritative specificati
 - CodeBridge's own source, user-owned configuration, operating system, and approved immutable images remain in the trusted computing base.
 - Prompt-injection defenses preserve provenance and workflow rules; they do not claim that a model is immune to prompt injection.
 - Runtime and filesystem limitations must be reported honestly and cannot be hidden by weakening tests.
+- The Node.js Permission Model is not enabled for the MCP process: its filesystem grants are fixed before CodeBridge loads the user's selected worktree and exact linked-metadata approvals. Broad startup grants would weaken the frozen path boundary. Node's own documentation says the model does not provide a malicious-code security boundary; Docker remains the execution sandbox.
 
 ## Alternatives rejected
 

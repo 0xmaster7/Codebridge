@@ -1,0 +1,47 @@
+export type ErrorCode =
+  | "INVALID_ARGUMENT"
+  | "INVALID_PATH"
+  | "OUTSIDE_ROOT"
+  | "PATH_TRAVERSAL"
+  | "SYMLINK_BLOCKED"
+  | "HARDLINK_BLOCKED"
+  | "SECRET_BLOCKED"
+  | "SECRET_SCAN_LIMIT"
+  | "FILE_NOT_FOUND"
+  | "UNSUPPORTED_FILE_TYPE"
+  | "BINARY_FILE"
+  | "FILE_TOO_LARGE"
+  | "SNAPSHOT_RACE_DETECTED"
+  | "SNAPSHOT_LIMIT_EXCEEDED"
+  | "SNAPSHOT_FAILED"
+  | "UNSUPPORTED_GIT_LAYOUT"
+  | "GIT_OBJECT_MISSING"
+  | "INVALID_REVISION"
+  | "GIT_FAILED"
+  | "CHECK_NOT_FOUND"
+  | "CHECK_NOT_ALLOWED"
+  | "CHECK_APPROVAL_STALE"
+  | "CHECK_IMAGE_MISSING"
+  | "CHECK_DEPENDENCIES_NOT_READY"
+  | "INVALID_CHECK_TARGET"
+  | "SANDBOX_UNAVAILABLE"
+  | "SANDBOX_START_FAILED"
+  | "SANDBOX_LIMIT_UNAVAILABLE"
+  | "RUN_TIMEOUT"
+  | "RUN_CANCELLED"
+  | "RUN_NOT_FOUND"
+  | "CONFIG_INVALID"
+  | "CONFIG_PERMISSION_UNSAFE"
+  | "READ_LIMIT_EXCEEDED"
+  | "INTERNAL_ERROR";
+
+export class CodeBridgeError extends Error {
+  public constructor(
+    public readonly code: ErrorCode,
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = "CodeBridgeError";
+  }
+}

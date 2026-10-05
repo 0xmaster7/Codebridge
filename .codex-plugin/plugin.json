@@ -1,0 +1,15 @@
+{
+  "name": "codebridge",
+  "version": "0.1.0",
+  "description": "Audit one approved local Git repository through a bounded, read-only MCP interface.",
+  "interface": {
+    "displayName": "CodeBridge",
+    "shortDescription": "Local repo audit over MCP",
+    "longDescription": "Inspect an approved immutable repository snapshot and isolated Git mirror, then run externally approved offline checks in a bounded sandbox.",
+    "developerName": "CodeBridge contributors",
+    "category": "Productivity",
+    "capabilities": ["Read"]
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}
