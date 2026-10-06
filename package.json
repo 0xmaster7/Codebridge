@@ -16,6 +16,7 @@
     "sandbox/",
     "plugin.json",
     "mcp.json",
+    "scripts/codebridge-mcp",
     ".codex-plugin/",
     ".codex/",
     ".mcp.json",

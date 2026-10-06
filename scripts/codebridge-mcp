@@ -1,0 +1,35 @@
+#!/bin/sh
+set -u
+
+node_command=$(command -v node 2>/dev/null || true)
+home_directory=${HOME:-}
+
+for candidate in \
+  "$node_command" \
+  /opt/homebrew/bin/node \
+  /usr/local/bin/node \
+  /usr/bin/node \
+  "$home_directory/.local/bin/node" \
+  "$home_directory/.volta/bin/node" \
+  "$home_directory/.asdf/shims/node" \
+  "$home_directory/.nvm/current/bin/node" \
+  "$home_directory"/.nvm/versions/node/*/bin/node \
+  "$home_directory/.local/share/mise/shims/node"
+do
+  [ -n "$candidate" ] && [ -x "$candidate" ] || continue
+  version=$("$candidate" --version 2>/dev/null || true)
+  major=${version#v}
+  major=${major%%.*}
+  case "$major" in
+    ''|*[!0-9]*) continue ;;
+  esac
+  [ "$major" -ge 24 ] || continue
+  if [ ! -f dist/src/cli.js ]; then
+    printf '%s\n' 'CodeBridge MCP: dist/src/cli.js is missing from the installed plugin.' >&2
+    exit 1
+  fi
+  exec "$candidate" "$@"
+done
+
+printf '%s\n' 'CodeBridge MCP: Node.js 24 or later was not found on the app PATH or in supported local install paths.' >&2
+exit 127

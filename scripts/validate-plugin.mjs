@@ -79,21 +79,28 @@ async function validateInstalledPortablePlugin(portableServer) {
   const installedRoot = join(workspace, "cache", "codebridge-local", "codebridge", "0.1.0");
   const env = {
     HOME: home,
-    PATH: process.env["PATH"] ?? "/usr/bin:/bin",
+    PATH: "/usr/bin:/bin:/usr/sbin:/sbin",
     GIT_CONFIG_NOSYSTEM: "1",
     PLUGIN_ROOT: installedRoot,
   };
 
   try {
     await mkdir(home, { recursive: true });
+    await mkdir(join(home, ".local/bin"), { recursive: true });
     await mkdir(repository);
     await mkdir(installedRoot, { recursive: true });
+    await mkdir(join(installedRoot, "scripts"), { recursive: true });
     for (const name of ["plugin.json", "mcp.json", "package.json"]) {
       await cp(join(repositoryRoot, name), join(installedRoot, name));
     }
     for (const name of ["dist", "sandbox", "skills"]) {
       await cp(join(repositoryRoot, name), join(installedRoot, name), { recursive: true });
     }
+    await cp(
+      join(repositoryRoot, "scripts/codebridge-mcp"),
+      join(installedRoot, "scripts/codebridge-mcp"),
+    );
+    await symlink(process.execPath, join(home, ".local/bin/node"));
     await symlink(join(repositoryRoot, "node_modules"), join(installedRoot, "node_modules"), "dir");
 
     await writeFile(join(repository, "README.md"), "Disposable plugin wiring smoke fixture.\n");
@@ -268,7 +275,7 @@ const portableServer = mcpManifest.mcpServers?.codebridge;
 assert.equal(typeof portableServer, "object");
 assert.deepEqual(Object.keys(portableServer).sort(), ["args", "command", "cwd", "type"]);
 assert.equal(portableServer.type, "stdio");
-assert.equal(portableServer.command, "node");
+assert.equal(portableServer.command, "./scripts/codebridge-mcp");
 assert.ok(Array.isArray(portableServer.args));
 assert.ok(portableServer.args.every((argument) => typeof argument === "string"));
 assert.deepEqual(portableServer.args, ["dist/src/cli.js", "mcp"]);
@@ -280,6 +287,7 @@ assert.match(
 assert.equal(portableServer.cwd, "${PLUGIN_ROOT}");
 assert.ok(packageManifest.files.includes("mcp.json"));
 assert.ok(packageManifest.files.includes("dist/"));
+assert.ok(packageManifest.files.includes("scripts/codebridge-mcp"));
 
 assert.equal(codexManifest.name, manifest.name);
 assert.equal(codexManifest.version, manifest.version);

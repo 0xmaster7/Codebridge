@@ -2,7 +2,7 @@
   "mcpServers": {
     "codebridge": {
       "type": "stdio",
-      "command": "node",
+      "command": "./scripts/codebridge-mcp",
       "args": ["dist/src/cli.js", "mcp"],
       "cwd": ".\/"
     }
