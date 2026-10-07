@@ -55,7 +55,7 @@ npm run build
 npm run doctor
 ```
 
-The compiled CLI is `dist/src/cli.js`; `npm link` can expose the `codebridge` command from a local checkout. Keep dependencies and lockfile pinned. `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:coverage`, `npm run check:security-coverage`, `node scripts/inspector-smoke.mjs`, and `npm run validate:plugin` are local quality gates. CI also builds test-only Node and Python images and runs `npm run test:sandbox-docker` and `npm run test:repository-dry-run` against their exact immutable image IDs.
+The compiled CLI is `dist/src/cli.js`; `npm link` can expose the `codebridge` command from a local checkout. Keep dependencies and lockfile pinned. `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:coverage`, `npm run check:security-coverage`, `node scripts/inspector-smoke.mjs`, `npm run validate:plugin`, and `npm run test:macos-agent` are local quality gates. CI also builds test-only Node and Python images and runs `npm run test:sandbox-docker` and `npm run test:repository-dry-run` against their exact immutable image IDs.
 
 ## Authorize one project
 
@@ -103,7 +103,7 @@ The server speaks MCP over stdio; stdout is reserved for protocol messages. Each
 
 The MCP tools are `audit_snapshot`, `repo_tree`, `find_paths`, `search_repo`, `read_file`, `read_files`, `git_status`, `git_log`, `git_diff`, `git_show`, `list_checks`, `run_check`, `check_status`, and `cancel_check`. Repository responses carry a structured `sourceTrust` value: `user_approved_requirement` only when the exact content hash matches an externally approved requirement, `untrusted_repository_content` for other repository-derived data, and `untrusted_execution_output` for check output. The server instructions tell the client that repository-derived content is never authorization.
 
-## Local Codex plugin and MCP smoke test
+## Local Codex plugin path
 
 Build first. The repository contains the local stdio package manifest, current Codex-compatible plugin metadata, a repo marketplace, and project plugin enablement. Restart the Codex desktop app or refresh local marketplaces, then confirm CodeBridge is shown under the repo marketplace. Codex CLI versions that support marketplace management can validate discovery with:
 
@@ -113,13 +113,13 @@ codex plugin marketplace list
 codex plugin list --available
 ```
 
-The CodeBridge plugin starts the compiled local server; it does not deploy a public service. Remove the local marketplace using the marketplace name shown by `marketplace list` when it is no longer needed. For protocol smoke testing, use the MCP Inspector against the built server and a test home containing a selected fixture project; verify initialization, tool discovery, annotations, and a representative read. `npm test` performs the programmatic stdio protocol and stdout-purity checks.
+The local marketplace entry starts the compiled stdio server for supported local plugin hosts such as Codex. It does not deploy a public service. In the tested ChatGPT Desktop configuration, installing this local package displayed plugin metadata but did not register its stdio MCP tools in a normal ChatGPT chat. Do not use this path for normal ChatGPT tool access. Remove the local marketplace using the marketplace name shown by `marketplace list` when it is no longer needed. For protocol smoke testing, use the MCP Inspector against the built server and a test home containing a selected fixture project; verify initialization, tool discovery, annotations, and a representative read. `npm test` performs the programmatic stdio protocol and stdout-purity checks.
 
-## Secure MCP Tunnel and ChatGPT
+## Normal ChatGPT path: Secure MCP Tunnel
 
-The server is local stdio and does not listen on a network interface. When the user's OpenAI account/workspace supports Secure MCP Tunnel, the tunnel can forward that local stdio service to ChatGPT without exposing a public listener. Follow the current official [Secure MCP Tunnel guide](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels) and the account's authorization flow. Do not paste credentials into project files or expose a Docker socket.
+For a normal ChatGPT chat, connect the CodeBridge stdio server through OpenAI Secure MCP Tunnel. The tunnel client initiates outbound HTTPS; it opens no inbound port, and the MCP server remains private. The complete new-Mac, existing-Mac, lifecycle, recovery, and removal steps are in [macOS Secure MCP Tunnel setup](./docs/MACOS_SECURE_MCP_TUNNEL.md). The [current official OpenAI guide](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels) governs changing account, permission, client-installation, and ChatGPT UI details.
 
-Live ChatGPT acceptance is a separate manual account test. Use `fixtures/fixture-audit-target`, ask the model to inspect provenance, read the explicitly approved spec, find each planted defect with evidence, run the approved offline check, report P0–P3 findings, prepare the Codex remediation package, and ignore planted prompt injection. Do not claim this test passed unless it was actually run through the user's account and tunnel.
+The tunnel-backed custom MCP app is the normal ChatGPT integration. Keep it distinct from the local marketplace plugin. If both appear in ChatGPT, select the custom app created from the tunnel. M15 acceptance is still a separate independent account test; do not claim it passed until the user runs it through normal ChatGPT and the tunnel.
 
 ## Audit and remediation workflow
 
